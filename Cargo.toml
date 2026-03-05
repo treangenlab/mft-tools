@@ -1,0 +1,19 @@
+[package]
+name = "MGA-seeding"
+version = "0.0.1"
+edition = "2024"
+authors = [
+    "Ryan Doughty <rdd4@rice.edu>",
+    "Todd Treangen <treangen@rice.edu>",
+]
+license = "MIT"
+description = "Evaluation of seeding performance for MGA"
+readme = "README.md"
+keywords = ["genome alignment", "seediing", "MUMs", "kmers"]
+categories = ["command-line-utilities", "science"]
+repository = "https://github.com/treangenlab/MGA-seeding"
+
+[dependencies]
+needletail = "0.6.0"
+clap = { version = "4", features = ["derive"] }
+fxhash = "0.2.1"
