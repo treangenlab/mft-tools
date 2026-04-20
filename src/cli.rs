@@ -20,14 +20,14 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Mode {
-    Complete(CompleteArgs), // Run all and compare
-    Sampling(SampleArgs), //Sampling --> parses genomes and calculates conservation
-    Mums(MUMArgs), //Call --> takes the genomes and sequencing data and does the viral variation analysis
+    DefineMapping(DefineMappingArgs), //Define a mapping table given kmer size and alphabet size and/or reduced  
+    Optimize(OptimizeOrderArgs), // Optimize an ordering given a mapping table and desired transition nucleotides balance
+    MFT(MinFrameTransitionArgs), //Call --> takes the genomes and sequencing data and does the viral variation analysis
 }
 
 #[derive(Args, Default)]
-#[clap(about="Run all seeding methods against a set of sequences and evaluate differences", arg_required_else_help = true)]
-pub struct CompleteArgs {
+#[clap(about="Run hill-climbing optimization on ordering for MFT performance", arg_required_else_help = true)]
+pub struct OptimizeOrderArgs {
 
     //sequence inputs
     #[clap(num_args=1.., short='g', long="genomes", help_heading = "SEQUENCE INPUT", help="Genome files (fasta format) to be tested for seeding performance")]
@@ -36,8 +36,8 @@ pub struct CompleteArgs {
 }
 
 #[derive(Args, Default)]
-#[clap(about="Run sampling-based methods against a set of sequences and get statistics", arg_required_else_help = true)]
-pub struct SampleArgs {
+#[clap(about="Function to build mapping table from kmers of size k to reduced alphabet", arg_required_else_help = true)]
+pub struct DefineMappingArgs {
 
     //sequence inputs
     #[clap(num_args=1.., short='g', long="genomes", help_heading = "SEQUENCE INPUT", help="Genome files to be tested for seeding performance")]
@@ -46,8 +46,8 @@ pub struct SampleArgs {
 }
 
 #[derive(Args, Default)]
-#[clap(about="Run MUM-based methods against a set of sequences and get statistics", arg_required_else_help = true)]
-pub struct MUMArgs {
+#[clap(about="Get min frame transformation of a sequence from fasta format", arg_required_else_help = true)]
+pub struct MinFrameTransitionArgs {
 
     //sequence inputs
     #[clap(num_args=1.., short='g', long="genomes", help_heading = "SEQUENCE INPUT", help="Genome files to be tested for seeding performance")]
