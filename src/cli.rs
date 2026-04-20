@@ -13,6 +13,7 @@ fn custom_styles() -> Styles {
 #[derive(Parser)]
 #[command(author, version, about, long_about = None, styles=custom_styles())]
 #[command(propagate_version = true)]
+
 pub struct Cli {
     #[clap(subcommand)]
     pub mode: Mode,
@@ -39,9 +40,21 @@ pub struct OptimizeOrderArgs {
 #[clap(about="Function to build mapping table from kmers of size k to reduced alphabet", arg_required_else_help = true)]
 pub struct DefineMappingArgs {
 
-    //sequence inputs
-    #[clap(num_args=1.., short='g', long="genomes", help_heading = "SEQUENCE INPUT", help="Genome files to be tested for seeding performance")]
-    pub genomes: Vec<String>
+    // K-mer size
+    #[clap(short='k', long="kmer-size", help="Length of the k-mer to be mapped")]
+    pub k: usize,
+
+    // Reduced alphabet size
+    #[clap(short='a', long="alphabet-size", help="Size of the reduced alphabet (e.g., 20 for same size as amino acids)")]
+    pub alphabet_size: Option<usize>,
+
+    // Spaced seed string
+    #[clap(short='s', long="spaced-seed", help="Spaced seed pattern with 1s being match, 0 mismatch (e.g., 11011). Length must match k.")]
+    pub spaced_seed: Option<String>,
+
+    // Output location
+    #[clap(short='o', long="output", help="Path where the resulting mapping table will be stored")]
+    pub output: String,
 
 }
 
