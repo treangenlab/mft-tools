@@ -24,3 +24,7 @@ target
 # Added by cargo
 
 /target
+
+/data
+/mumemto_debugging
+/scripts/mumemto*
