@@ -30,11 +30,36 @@ pub enum Mode {
 #[clap(about="Run hill-climbing optimization on ordering for MFT performance", arg_required_else_help = true)]
 pub struct OptimizeOrderArgs {
 
-    //sequence inputs
-    #[clap(num_args=1.., short='g', long="genomes", help_heading = "SEQUENCE INPUT", help="Genome files (fasta format) to be tested for seeding performance")]
-    pub genomes: Vec<String>,
+    // K-mer size
+    #[clap(short='k', long="kmer-size", help_heading="MFT Algorithm Params", default_value_t=3, help="Length of the k-mer (must match mapping table)")]
+    pub k: usize,
 
-        //Verbose mode (prints most checkpoints)
+    // Window size
+    #[clap(short='w', long="window-size", help_heading="MFT Algorithm Params", default_value_t=5, help="Length of the sequence window (w >= k)")]
+    pub w: usize,
+
+    // Mapping Table path
+    #[clap(short='m', long="mapping-table", help_heading="MFT Algorithm Params", help="Path to the tab-delimited k-mer mapping file")]
+    pub mapping_table: String,
+
+    // Optional: Base Order path
+    #[clap(short='b', long="base-order", help_heading="MFT Algorithm Params", help="Initial k-mer ordering file to start optimization from")]
+    pub base_order: Option<String>,
+
+    // Optional: Number of iterations
+    #[clap(short='i', long="iterations", help_heading="Optimization Parameters", default_value_t = 4000, help="Number of hill-climbing iterations")]
+    pub num_iterations: usize,
+
+    // Optional: Number of iterations
+    #[clap(short='s', long="samples", help_heading="Optimization Parameters", default_value_t = 10000, help="Number of samples used to calculate the masking rate at each iteration")]
+    pub num_samples: usize,
+
+    // Output path
+    #[clap(short='o', long="output", help_heading="Output", default_value="optimized_order.txt", help="Path to save the optimized k-mer ordering")]
+    pub output: String,
+
+
+    //Verbose mode (prints most checkpoints)
     #[clap(long = "verbose", help = "Verbose output (warning: very verbose)")]
     pub verbose: bool,
 
