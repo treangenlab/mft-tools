@@ -28,3 +28,7 @@ target
 /data
 /mumemto_debugging
 /scripts/mumemto*
+/scripts/*.txt
+/scripts/*.png
+/scripts/data
+/scripts/__pycache__

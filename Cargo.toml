@@ -16,7 +16,8 @@ repository = "https://github.com/treangenlab/MGA-seeding"
 [dependencies]
 needletail = "0.6.0"
 clap = { version = "4", features = ["derive"] }
-fxhash = "0.2.1"
+rustc-hash = "2.1.1"
 simple_logger = "5.2.0"
 log = "0.4.29"
 itertools = "0.14.0"
+rand = "0.10.1"
