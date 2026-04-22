@@ -2,15 +2,14 @@ use std::time::Instant;
 
 use crate::consts::MFT_VERSION;
 
-pub mod consts;
 pub mod cli;
+pub mod consts;
 pub mod mapping;
-pub mod optimize;
 pub mod mft;
+pub mod optimize;
 pub mod utils;
 
 use cli::*;
-
 
 fn main() {
     println!("Min-Frame Transformation v{}", MFT_VERSION);
@@ -27,5 +26,9 @@ fn main() {
     }
 
     let end = Instant::now();
-    eprintln!("\nMFT v{} finished in {}s", MFT_VERSION, end.duration_since(start).as_secs_f32());
+    eprintln!(
+        "\nMFT v{} finished in {}s",
+        MFT_VERSION,
+        end.duration_since(start).as_secs_f32()
+    );
 }
