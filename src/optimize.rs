@@ -1,17 +1,17 @@
 use crate::cli::*;
 use crate::utils::*;
 use log::*;
-use std::path::Path;
 use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, Write};
+use std::path::Path;
 
 use rustc_hash::{FxHashMap, FxHashSet};
 
-use rand::seq::SliceRandom;
+use itertools::Itertools;
+use rand::RngExt;
 use rand::SeedableRng;
 use rand::rngs::StdRng;
-use rand::RngExt;
-use itertools::Itertools;
+use rand::seq::SliceRandom;
 
 pub fn check_args(args: &OptimizeOrderArgs) {
     let output_level = if args.verbose {
@@ -30,12 +30,18 @@ pub fn check_args(args: &OptimizeOrderArgs) {
     }
 
     if args.w <= args.k {
-        error!("Invalid window size: {}. Window size (w) must be strictly greater than k-mer size (k={}).", args.w, args.k);
+        error!(
+            "Invalid window size: {}. Window size (w) must be strictly greater than k-mer size (k={}).",
+            args.w, args.k
+        );
         std::process::exit(1);
     }
 
     if args.num_iterations < 1 || args.num_iterations > 10000 {
-        error!("Number of iterations {} is out of bounds. Must be between 500 and 10000.", args.num_iterations);
+        error!(
+            "Number of iterations {} is out of bounds. Must be between 500 and 10000.",
+            args.num_iterations
+        );
         std::process::exit(1);
     }
 
@@ -64,7 +70,10 @@ pub fn optimize(args: OptimizeOrderArgs) {
     check_args(&args);
 
     info!("Starting hill-climbing optimization");
-    info!("Parameters: k={}, w={}, iterations={}", args.k, args.w, args.num_iterations);
+    info!(
+        "Parameters: k={}, w={}, iterations={}",
+        args.k, args.w, args.num_iterations
+    );
 
     let mapping = load_mapping(&args.mapping_table);
     let (mut current_order, _seed) = initialize_order(args.k, &args.base_order);
@@ -72,7 +81,11 @@ pub fn optimize(args: OptimizeOrderArgs) {
     let mut current_map = get_order_map(&current_order);
 
     let (mut best_rate, mut curr_entropy, mut best_transition_rates) = calculate_masking_rate(
-        &current_map, &mapping, args.k, args.w, Some(args.num_samples)
+        &current_map,
+        &mapping,
+        args.k,
+        args.w,
+        Some(args.num_samples),
     );
 
     info!("Initial Masking Rate: {:.4}%", best_rate * 100.0);
@@ -83,20 +96,25 @@ pub fn optimize(args: OptimizeOrderArgs) {
         let len = current_order.len();
         let idx1 = rng.random_range(0..len);
         let idx2 = rng.random_range(0..len);
-        
+
         current_order.swap(idx1, idx2);
         let test_map = get_order_map(&current_order);
 
-        let (test_rate, test_entropy, test_transition_rates) = calculate_masking_rate(
-            &test_map, &mapping, args.k, args.w, Some(args.num_samples)
-        );
+        let (test_rate, test_entropy, test_transition_rates) =
+            calculate_masking_rate(&test_map, &mapping, args.k, args.w, Some(args.num_samples));
 
         if test_rate > best_rate {
             let diff = test_rate - best_rate;
             best_rate = test_rate;
             best_transition_rates = test_transition_rates;
             curr_entropy = test_entropy;
-            info!(" Trial {:4}: Improvement -- New Masking Rate: {:.4}% (+{:.4}%) -- New Entropy: {:.2}", i, best_rate * 100.0, diff * 100.0, curr_entropy);
+            info!(
+                " Trial {:4}: Improvement -- New Masking Rate: {:.4}% (+{:.4}%) -- New Entropy: {:.2}",
+                i,
+                best_rate * 100.0,
+                diff * 100.0,
+                curr_entropy
+            );
         } else {
             current_order.swap(idx1, idx2);
         }
@@ -105,19 +123,19 @@ pub fn optimize(args: OptimizeOrderArgs) {
     save_order(&args.output, &current_order);
 }
 
-pub fn initialize_order(
-    k: usize, 
-    base_order_path: &Option<String>
-) -> (Vec<String>, u64) {
+pub fn initialize_order(k: usize, base_order_path: &Option<String>) -> (Vec<String>, u64) {
     if let Some(path) = base_order_path {
         info!("Loading initial ordering from: {}", path);
         let content = std::fs::read_to_string(path).expect("Failed to read base order file");
         let order: Vec<String> = content.lines().map(|s| s.trim().to_string()).collect();
-        (order, 0) 
+        (order, 0)
     } else {
         let mut kmers = generate_all_kmers(k);
         let seed = rand::random::<u64>();
-        info!("No base order provided. Initializing random order with seed: {}", seed);
+        info!(
+            "No base order provided. Initializing random order with seed: {}",
+            seed
+        );
         let mut rng = StdRng::seed_from_u64(seed);
         kmers.shuffle(&mut rng);
         (kmers, seed)
@@ -191,7 +209,9 @@ pub fn calculate_masking_rate(
         for i in 0..w {
             let orig_base = window[i];
             for &mutation_base in &bases {
-                if mutation_base == orig_base { continue; }
+                if mutation_base == orig_base {
+                    continue;
+                }
 
                 let mut mut_window = window.clone();
                 mut_window[i] = mutation_base;
@@ -200,11 +220,11 @@ pub fn calculate_masking_rate(
 
                 // info!("{} {} {} {}", String::from_utf8_lossy(&window), original_res, String::from_utf8_lossy(&mut_window), mut_res);
                 total_trials += 1;
-                
+
                 // Track the specific mutation type
                 if let Some(stats) = mutation_stats.get_mut(&(orig_base, mutation_base)) {
                     stats.0 += 1; // Increment total trials for this specific transition
-                    
+
                     if mut_res != original_res {
                         flicker_events += 1;
                         stats.1 += 1; // Increment flicker events for this specific transition
@@ -244,14 +264,14 @@ fn minimizer(
     window: &[u8],
     order_map: &FxHashMap<String, usize>,
     mapping: &FxHashMap<String, char>,
-    k: usize
+    k: usize,
 ) -> char {
     let mut best_rank = usize::MAX;
     let mut best_kmer: Option<String> = None;
 
     for i in 0..=(window.len() - k) {
-        let kmer = String::from_utf8_lossy(&window[i..i+k]).to_string();
-        
+        let kmer = String::from_utf8_lossy(&window[i..i + k]).to_string();
+
         if let Some(&rank) = order_map.get(&kmer) {
             if rank < best_rank {
                 best_rank = rank;

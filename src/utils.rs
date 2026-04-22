@@ -1,8 +1,7 @@
+use log::*;
 use rustc_hash::FxHashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, Write};
-use log::*;
-
 
 pub fn load_mapping(path: &str) -> FxHashMap<String, char> {
     let file = File::open(path).unwrap_or_else(|_| {
@@ -35,7 +34,11 @@ pub fn load_mapping(path: &str) -> FxHashMap<String, char> {
 }
 
 pub fn get_order_map(order: &[String]) -> FxHashMap<String, usize> {
-    order.iter().enumerate().map(|(i, k)| (k.clone(), i)).collect()
+    order
+        .iter()
+        .enumerate()
+        .map(|(i, k)| (k.clone(), i))
+        .collect()
 }
 
 pub fn check_fasta(file: &str) -> bool {

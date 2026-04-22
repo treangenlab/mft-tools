@@ -25,7 +25,10 @@ pub fn check_args(args: &MinFrameTransitionArgs) {
     }
 
     if args.w <= args.k {
-        error!("Invalid window size: {}. Window size (w) must be strictly greater than k-mer size (k={}).", args.w, args.k);
+        error!(
+            "Invalid window size: {}. Window size (w) must be strictly greater than k-mer size (k={}).",
+            args.w, args.k
+        );
         std::process::exit(1);
     }
 
@@ -40,12 +43,14 @@ pub fn check_args(args: &MinFrameTransitionArgs) {
     }
 
     for fasta_file in &args.genomes {
-        if !check_fasta(&fasta_file){
-            error!("{} does not appear to be a fasta file (must be .fa(.gz)/.fasta(.gz)/.fna(.gz))", &fasta_file);
+        if !check_fasta(&fasta_file) {
+            error!(
+                "{} does not appear to be a fasta file (must be .fa(.gz)/.fasta(.gz)/.fna(.gz))",
+                &fasta_file
+            );
             std::process::exit(1)
         }
     }
-
 
     let out_path = Path::new(&args.output);
     if let Some(parent) = out_path.parent() {
@@ -82,7 +87,7 @@ pub fn prepare_luts(
 
     for (kmer, &rank) in order_map {
         let idx = kmer_to_idx(kmer);
-        
+
         if idx < lut_size {
             order_lut[idx] = rank as u32;
         }
@@ -107,7 +112,7 @@ pub fn mft(args: MinFrameTransitionArgs) {
     let raw_order_map = get_order_map(&order_lines);
 
     let (order_lut, rank_to_char_lut) = prepare_luts(&raw_order_map, &raw_mapping, args.k);
-    
+
     let out_file = File::create(&args.output).expect("Failed to create output file");
     let mut buf_writer = BufWriter::new(out_file);
 
@@ -124,8 +129,8 @@ pub fn mft(args: MinFrameTransitionArgs) {
 
         while let Some(record) = reader.next() {
             let seqrec = record.expect("Invalid record");
-            let seq = seqrec.seq(); 
-            
+            let seq = seqrec.seq();
+
             // The baseline requirement is simply having enough bases to form one k-mer
             if seq.len() < args.k {
                 warn!(
@@ -148,10 +153,10 @@ pub fn mft(args: MinFrameTransitionArgs) {
                     b'C' | b'c' => 1,
                     b'G' | b'g' => 2,
                     b'T' | b't' => 3,
-                    _ => 0, 
+                    _ => 0,
                 };
                 current_kmer = ((current_kmer << 2) | val) & k_mask;
-                
+
                 if i >= args.k - 1 {
                     let rank = *order_lut.get(current_kmer).unwrap_or(&u32::MAX);
                     ranks.push(rank);
@@ -163,7 +168,7 @@ pub fn mft(args: MinFrameTransitionArgs) {
 
             //Use the queue format that many other minimizer algorithms have used
             let mut window = VecDeque::with_capacity(window_kmers);
-            
+
             let n = ranks.len();
             let mut r = 0;
 
@@ -195,7 +200,7 @@ pub fn mft(args: MinFrameTransitionArgs) {
                 // Output the minimizer for the current window (even if the window truncated at the end)
                 let min_idx = *window.front().unwrap();
                 let rank = ranks[min_idx];
-                
+
                 let c = rank_to_char_lut.get(rank as usize).copied().unwrap_or('?');
                 transformed_sequence.push(c);
             }
@@ -206,8 +211,10 @@ pub fn mft(args: MinFrameTransitionArgs) {
                 transformed_sequence.len()
             );
 
-            writeln!(buf_writer, ">{}", String::from_utf8_lossy(seqrec.id())).expect("Failed to write FASTA header");
-            writeln!(buf_writer, "{}", transformed_sequence).expect("Failed to write sequence data");
+            writeln!(buf_writer, ">{}", String::from_utf8_lossy(seqrec.id()))
+                .expect("Failed to write FASTA header");
+            writeln!(buf_writer, "{}", transformed_sequence)
+                .expect("Failed to write sequence data");
         }
     }
 
