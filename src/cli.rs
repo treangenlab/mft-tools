@@ -58,7 +58,6 @@ pub struct OptimizeOrderArgs {
     #[clap(short='o', long="output", help_heading="Output", default_value="optimized_order.txt", help="Path to save the optimized k-mer ordering")]
     pub output: String,
 
-
     //Verbose mode (prints most checkpoints)
     #[clap(long = "verbose", help = "Verbose output (warning: very verbose)")]
     pub verbose: bool,
@@ -70,15 +69,15 @@ pub struct OptimizeOrderArgs {
 pub struct DefineMappingArgs {
 
     // K-mer size
-    #[clap(short='k', long="kmer-size", help_heading="ALGORITHM", help="Length of the k-mer to be mapped")]
+    #[clap(short='k', long="kmer-size", help_heading="MFT Algorithm Params", help="Length of the k-mer to be mapped")]
     pub k: usize,
 
     // Reduced alphabet size
-    #[clap(short='a', long="alphabet-size", help_heading="ALGORITHM", help="Size of the reduced alphabet (e.g., 20 for same size as amino acids)")]
+    #[clap(short='a', long="alphabet-size", help_heading="MFT Algorithm Params", help="Size of the reduced alphabet (e.g., 20 for same size as amino acids)")]
     pub alphabet_size: Option<usize>,
 
     // Spaced seed string
-    #[clap(short='s', long="spaced-seed", help_heading="ALGORITHM", help="Spaced seed pattern with 1s being match, 0 mismatch (e.g., 11011). Length must match k.")]
+    #[clap(short='s', long="spaced-seed", help_heading="MFT Algorithm Params", help="Spaced seed pattern with 1s being match, 0 mismatch (e.g., 11011). Length must match k.")]
     pub spaced_seed: Option<String>,
 
     // Output location
@@ -96,10 +95,30 @@ pub struct DefineMappingArgs {
 pub struct MinFrameTransitionArgs {
 
     //sequence inputs
-    #[clap(num_args=1.., short='g', long="genomes", help_heading = "SEQUENCE INPUT", help="Genome files to be tested for seeding performance")]
+    #[clap(num_args=1.., short='g', long="genomes", help_heading = "Sequence Input", help="Sequence files to be converted to MFT")]
     pub genomes: Vec<String>,
 
-        //Verbose mode (prints most checkpoints)
+    // K-mer size
+    #[clap(short='k', long="kmer-size", help_heading="MFT Algorithm Params", default_value_t=3, help="Length of the k-mer (must match mapping table)")]
+    pub k: usize,
+
+    // Window size
+    #[clap(short='w', long="window-size", help_heading="MFT Algorithm Params", default_value_t=5, help="Length of the sequence window (w >= k)")]
+    pub w: usize,
+
+    // Mapping Table path
+    #[clap(short='m', long="mapping-table", help_heading="MFT Algorithm Params", help="Path to the tab-delimited k-mer mapping file")]
+    pub mapping_table: String,
+
+    // Optional: Base Order path
+    #[clap(short='b', long="order", help_heading="MFT Algorithm Params", help="Path to file containing k-mer ordering")]
+    pub order: String,
+
+    // Output location
+    #[clap(short='o', long="output", help_heading="Output", default_value="mft.fa", help="Path where the resulting fasta files will be outputted too")]
+    pub output: String,
+
+    //Verbose mode (prints most checkpoints)
     #[clap(long = "verbose", help = "Verbose output (warning: very verbose)")]
     pub verbose: bool,
 

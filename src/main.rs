@@ -7,6 +7,7 @@ pub mod cli;
 pub mod mapping;
 pub mod optimize;
 pub mod mft;
+pub mod utils;
 
 use cli::*;
 
