@@ -1,5 +1,5 @@
 [package]
-name = "MGA-seeding"
+name = "mft"
 version = "0.0.1"
 edition = "2024"
 authors = [
@@ -7,11 +7,11 @@ authors = [
     "Todd Treangen <treangen@rice.edu>",
 ]
 license = "MIT"
-description = "Evaluation of seeding performance for MGA"
+description = "Min-Frame Transformation for sequence analysis"
 readme = "README.md"
-keywords = ["genome alignment", "seediing", "MUMs", "kmers"]
+keywords = ["genome alignment", "seeding", "MUMs", "kmers"]
 categories = ["command-line-utilities", "science"]
-repository = "https://github.com/treangenlab/MGA-seeding"
+repository = "https://github.com/treangenlab/MFT"
 
 [dependencies]
 needletail = "0.6.0"
