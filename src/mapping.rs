@@ -39,8 +39,8 @@ pub fn check_args(args: &DefineMappingArgs) {
 
     // Alphabet size check: 4-64 (could update later)
     if let Some(size) = args.alphabet_size {
-        if size < 4 || size > 64 {
-            error!("Alphabet size {} is out of bounds. Must be 4-64.", size);
+        if size < 4 || size > MAP_ALPHABET.len() {
+            error!("Alphabet size {} is out of bounds. Must be 4-{}.", size, MAP_ALPHABET.len());
             std::process::exit(1);
         }
     }
@@ -58,8 +58,8 @@ pub fn check_args(args: &DefineMappingArgs) {
 
         // Assuming '1' or 'X' represents a match (weight)
         let weight = seed.chars().filter(|&c| c == '1' || c == 'X').count();
-        if weight < 2 || weight > 3 {
-            error!("Spaced seed weight is {}. Must be between 2 and 3.", weight);
+        if weight < 1 || weight > 3 {
+            error!("Spaced seed weight is {}. Must be between 1 and 3.", weight);
             std::process::exit(1);
         }
     }
