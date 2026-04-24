@@ -9,3 +9,168 @@ The MFT is similar to the use of minimizers in many ways, however there are some
 1. A value is chosen for every single window, even if it is the same as the neighboring window. This allows for a 1:1 transformation in sequence length
 2. The ordering of the kmers is not random and must be defined a-priori
 3. Kmers map directly to a reduced alphabet (typically 12-64 characters), rather than a single hash per kmer. This allows for mutations to be masked
+
+## Installation
+
+MFT is currently distributed as source only. You will need [Rust](https://www.rust-lang.org/tools/install) (edition 2024, stable toolchain) installed.
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/treangenlab/MFT.git
+cd MFT
+
+# 2. Build and run (release build recommended for performance)
+cargo build --release
+
+# The compiled binary will be at ./target/release/mft
+# You can also run directly with cargo:
+cargo run --release -- --help
+```
+
+## Usage
+
+MFT exposes three subcommands. The typical workflow is:
+
+1. **`define-mapping`** — generate a k-mer → character mapping table
+2. **`optimize`** — find an ordering of k-mers that maximises the masking rate
+3. **`mft`** — apply the transformation to one or more FASTA files
+
+Pre-built mapping tables for common configurations are provided in the [`mapping_tables/`](mapping_tables/) directory.
+
+---
+
+### `define-mapping`
+
+Generates a tab-delimited mapping table that assigns every k-mer to a character in a reduced alphabet. The reduced alphabet is derived from a spaced-seed pattern: positions marked `1` or `X` in the seed are the "match" positions, so k-mers that agree at those positions map to the same character.
+
+```
+mft define-mapping [OPTIONS] --kmer-size <K> --output <FILE>
+                             (--alphabet-size <N> | --spaced-seed <SEED>)
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `-k, --kmer-size` | *(required)* | k-mer length (3–15) |
+| `-a, --alphabet-size` | — | Size of reduced alphabet (mutually exclusive with `--spaced-seed`) |
+| `-s, --spaced-seed` | — | Seed pattern, e.g. `11011` (length must equal k; weight 2–3) |
+| `-o, --output` | *(required)* | Output file path |
+| `--verbose` | off | Verbose logging |
+
+**Example** — build a mapping table for k=5 with seed `11011` (ignore the middle position):
+
+```bash
+mft define-mapping -k 5 -s 11011 -o mapping_tables/k5_11011.txt
+```
+
+**Output** — a tab-delimited file with one k-mer per line followed by its mapped character:
+
+```
+AAAAA   A
+AAAAC   A
+AAAAG   A
+...
+TTTTT   L
+```
+
+The file will contain `4^k` lines (one per k-mer). The number of distinct characters equals the number of unique patterns defined by the seed (e.g. `4^weight` for a spaced seed of a given weight).
+
+---
+
+### `optimize`
+
+Runs a hill-climbing search over k-mer orderings to maximise the MFT masking rate — the fraction of single-nucleotide mutations that do not change the transformed character at that position. The result is an ordering file used as input to the `mft` subcommand.
+
+```
+mft optimize [OPTIONS] --mapping-table <FILE>
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `-k, --kmer-size` | `3` | k-mer length (must match mapping table) |
+| `-w, --window-size` | `5` | Sliding window length (must be > k) |
+| `-m, --mapping-table` | *(required)* | Path to tab-delimited mapping file |
+| `-b, --base-order` | random | Initial ordering file to seed optimisation from |
+| `-i, --iterations` | `4000` | Number of hill-climbing iterations (max 10 000) |
+| `-s, --samples` | `10000` | Windows sampled per masking-rate evaluation |
+| `-o, --output` | `optimized_order.txt` | Output ordering file |
+| `--verbose` | off | Verbose logging |
+
+**Example** — optimise an ordering for k=3, w=5 using the provided mapping table:
+
+```bash
+mft optimize -k 3 -w 5 -m mapping_tables/k3_XX-.txt -i 4000 -o optimized_order.txt
+```
+
+**Progress output** (stderr) — each improvement is logged:
+
+```
+[INFO] Starting hill-climbing optimization
+[INFO] Parameters: k=3, w=5, iterations=4000
+[INFO] Initial Masking Rate: 72.3100%
+[INFO]  Trial   47: Improvement -- New Masking Rate: 72.4800% (+0.1700%) -- New Entropy: 3.58
+[INFO]  Trial  213: Improvement -- New Masking Rate: 72.6300% (+0.1500%) -- New Entropy: 3.61
+...
+[INFO] Optimized ordering saved to optimized_order.txt
+```
+
+**Output file** — a plain-text file with one k-mer per line, listed in priority order (rank 0 first):
+
+```
+CTG
+TTG
+CTC
+...
+```
+
+The file contains all `4^k` k-mers (64 lines for k=3).
+
+---
+
+### `mft`
+
+Applies the Min-Frame Transformation to one or more FASTA files. Each sequence is transformed to a same-length string over the reduced alphabet and written to a new FASTA file.
+
+```
+mft mft [OPTIONS] --genomes <FILE>... --mapping-table <FILE> --order <FILE>
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `-g, --genomes` | *(required)* | One or more input FASTA files (`.fa`, `.fasta`, `.fna`, optionally `.gz`) |
+| `-k, --kmer-size` | `3` | k-mer length (must match mapping table and order file) |
+| `-w, --window-size` | `5` | Sliding window length (must be > k) |
+| `-m, --mapping-table` | *(required)* | Path to tab-delimited mapping file |
+| `-b, --order` | *(required)* | Path to k-mer ordering file |
+| `-o, --output` | `mft.fa` | Output FASTA file path |
+| `--verbose` | off | Verbose logging |
+
+**Example** — transform a genome FASTA file:
+
+```bash
+mft mft -g genome.fna -k 3 -w 5 \
+        -m mapping_tables/k3_XX-.txt \
+        -b optimized_order.txt \
+        -o genome_mft.fa
+```
+
+Multiple input files can be provided; all sequences are written to the single output file:
+
+```bash
+mft mft -g ref.fa query.fa -k 3 -w 5 \
+        -m mapping_tables/k3_XX-.txt \
+        -b optimized_order.txt \
+        -o combined_mft.fa
+```
+
+**Output** — a FASTA file where each record preserves the original header and has a transformed sequence of the same length (number of k-mers = sequence length − k + 1):
+
+```
+>U00096.3 Escherichia coli str. K-12 substr. MG1655, complete genome
+LLLFSHHHSLLL_LLLAATRRRAAAQYMMMSLLLLLCCCVDDLLL_KKKK...
+```
+
+A progress line is emitted to stderr for each sequence processed:
+
+```
+[INFO] Transformed 'U00096.3'. Length: 4641649
+```
