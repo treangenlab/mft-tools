@@ -1,6 +1,6 @@
 # Min-Frame Transformation (MFT)
 
-This code base contains utility functions and analyses for the Min-Frame Transformation (MFT). 
+This code base contains utility functions and analyses for the Min-Frame Transformation (MFT) collectively called mft-tools. 
 
 ## Overview of Min-Frame Transformation
 The MFT allows local transformation of a nucleotide sequence to a character sequence over a separate defined alphabet. This transformation allows effectively masks a large percentage of single-nucleotide mutations and can lead to increased sensitivity when using full-text indexing methods (MUMs, BWT, etc). Downstream this can lead to better accuracy and performance on genome alignment tasks, and potentially more. 
@@ -12,28 +12,28 @@ The MFT is similar to the use of minimizers in many ways, however there are some
 
 ## Installation
 
-MFT is currently distributed as source only. You will need [Rust](https://www.rust-lang.org/tools/install) (edition 2024, stable toolchain) installed.
+mft-tools is currently distributed as source only. You will need [Rust](https://www.rust-lang.org/tools/install) (edition 2024, stable toolchain) installed.
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/treangenlab/MFT.git
-cd MFT
+git clone https://github.com/treangenlab/mft-tools.git
+cd mft-tools
 
 # 2. Build and run (release build recommended for performance)
 cargo build --release
 
-# The compiled binary will be at ./target/release/mft
+# The compiled binary will be at ./target/release/mft-tools
 # You can also run directly with cargo:
 cargo run --release -- --help
 ```
 
 ## Usage
 
-MFT exposes three subcommands. The typical workflow is:
+mft-tools exposes three subcommands. The typical workflow is:
 
 1. **`define-mapping`** — generate a k-mer → character mapping table
 2. **`optimize`** — find an ordering of k-mers that maximises the masking rate
-3. **`mft`** — apply the transformation to one or more FASTA files
+3. **`transform`** — apply the transformation to one or more FASTA files
 
 Pre-built mapping tables for common configurations are provided in the [`mapping_tables/`](mapping_tables/) directory.
 
@@ -44,7 +44,7 @@ Pre-built mapping tables for common configurations are provided in the [`mapping
 Generates a tab-delimited mapping table that assigns every k-mer to a character in a reduced alphabet. The reduced alphabet is derived from a spaced-seed pattern: positions marked `1` or `X` in the seed are the "match" positions, so k-mers that agree at those positions map to the same character.
 
 ```
-mft define-mapping [OPTIONS] --kmer-size <K> --output <FILE>
+mft-tools define-mapping [OPTIONS] --kmer-size <K> --output <FILE>
                              (--alphabet-size <N> | --spaced-seed <SEED>)
 ```
 
@@ -59,7 +59,7 @@ mft define-mapping [OPTIONS] --kmer-size <K> --output <FILE>
 **Example** — build a mapping table for k=5 with seed `11011` (ignore the middle position):
 
 ```bash
-mft define-mapping -k 5 -s 11011 -o mapping_tables/k5_11011.txt
+mft-tools define-mapping -k 5 -s 11011 -o mapping_tables/k5_11011.txt
 ```
 
 **Output** — a tab-delimited file with one k-mer per line followed by its mapped character:
@@ -81,7 +81,7 @@ The file will contain `4^k` lines (one per k-mer). The number of distinct charac
 Runs a hill-climbing search over k-mer orderings to maximise the MFT masking rate — the fraction of single-nucleotide mutations that do not change the transformed character at that position. The result is an ordering file used as input to the `mft` subcommand.
 
 ```
-mft optimize [OPTIONS] --mapping-table <FILE>
+mft-tools optimize [OPTIONS] --mapping-table <FILE>
 ```
 
 | Flag | Default | Description |
@@ -98,7 +98,7 @@ mft optimize [OPTIONS] --mapping-table <FILE>
 **Example** — optimise an ordering for k=3, w=5 using the provided mapping table:
 
 ```bash
-mft optimize -k 3 -w 5 -m mapping_tables/k3_XX-.txt -i 4000 -o optimized_order.txt
+mft-tools optimize -k 3 -w 5 -m mapping_tables/k3_XX-.txt -i 4000 -o optimized_order.txt
 ```
 
 **Progress output** (stderr) — each improvement is logged:
@@ -126,12 +126,12 @@ The file contains all `4^k` k-mers (64 lines for k=3).
 
 ---
 
-### `mft`
+### `transform`
 
 Applies the Min-Frame Transformation to one or more FASTA files. Each sequence is transformed to a same-length string over the reduced alphabet and written to a new FASTA file.
 
 ```
-mft mft [OPTIONS] --genomes <FILE>... --mapping-table <FILE> --order <FILE>
+mft-tools transform [OPTIONS] --genomes <FILE>... --mapping-table <FILE> --order <FILE>
 ```
 
 | Flag | Default | Description |
@@ -147,7 +147,7 @@ mft mft [OPTIONS] --genomes <FILE>... --mapping-table <FILE> --order <FILE>
 **Example** — transform a genome FASTA file:
 
 ```bash
-mft mft -g genome.fna -k 3 -w 5 \
+mft-tools transform -g genome.fna -k 3 -w 5 \
         -m mapping_tables/k3_XX-.txt \
         -b optimized_order.txt \
         -o genome_mft.fa
@@ -156,7 +156,7 @@ mft mft -g genome.fna -k 3 -w 5 \
 Multiple input files can be provided; all sequences are written to the single output file:
 
 ```bash
-mft mft -g ref.fa query.fa -k 3 -w 5 \
+mft-tools transform -g ref.fa query.fa -k 3 -w 5 \
         -m mapping_tables/k3_XX-.txt \
         -b optimized_order.txt \
         -o combined_mft.fa
