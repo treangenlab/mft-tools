@@ -75,6 +75,19 @@ fn kmer_to_idx(kmer: &str) -> usize {
     })
 }
 
+/// Computes the reverse complement of a 2-bit encoded k-mer integer.
+fn rev_comp_kmer(mut kmer: usize, k: usize) -> usize {
+    let mut rev = 0;
+    for _ in 0..k {
+        // Extract last 2 bits, XOR with 3 to complement (A<->T, C<->G), 
+        // then push into the new integer.
+        rev = (rev << 2) | ((kmer & 3) ^ 3);
+        kmer >>= 2;
+    }
+    rev
+}
+
+
 /// Builds the flat arrays required for execution of simd-minimizers
 pub fn prepare_luts(
     order_map: &FxHashMap<String, usize>,
@@ -117,36 +130,23 @@ pub fn mft(args: MinFrameTransitionArgs) {
     let mut buf_writer = BufWriter::new(out_file);
 
     let window_kmers = args.w - args.k + 1;
+    let k_mask = (1 << (2 * args.k)) - 1;
 
     for genome_path in &args.genomes {
-        if args.verbose {
-            info!("Processing file: {}", genome_path);
-        }
-
         let mut reader = parse_fastx_file(genome_path).unwrap_or_else(|_| {
             panic!("Failed to open or parse FASTA/FASTQ file: {}", genome_path);
         });
 
         while let Some(record) = reader.next() {
             let seqrec = record.expect("Invalid record");
-            let seq = seqrec.seq();
+            let seq = seqrec.seq(); // This is the Cow<[u8]>
 
-            // The baseline requirement is simply having enough bases to form one k-mer
-            if seq.len() < args.k {
-                warn!(
-                    "Sequence '{}' is too short ({} < k={}). Skipping.",
-                    String::from_utf8_lossy(seqrec.id()),
-                    seq.len(),
-                    args.k
-                );
-                continue;
-            }
+            if seq.len() < args.k { continue; }
 
             let mut ranks = Vec::with_capacity(seq.len() - args.k + 1);
-            let k_mask = (1 << (2 * args.k)) - 1;
             let mut current_kmer = 0usize;
 
-            // Convert the pure sequence into a continuous stream of mapped MFT ranks
+            // Single pass: Calculate canonical rank (min of fwd and rev k-mer)
             for (i, &b) in seq.iter().enumerate() {
                 let val = match b {
                     b'A' | b'a' => 0,
@@ -158,68 +158,54 @@ pub fn mft(args: MinFrameTransitionArgs) {
                 current_kmer = ((current_kmer << 2) | val) & k_mask;
 
                 if i >= args.k - 1 {
-                    let rank = *order_lut.get(current_kmer).unwrap_or(&u32::MAX);
-                    ranks.push(rank);
+                    // Forward rank
+                    let fwd_rank = *order_lut.get(current_kmer).unwrap_or(&u32::MAX);
+                    
+                    let mut rev_kmer = 0usize;
+                    let mut tmp = current_kmer;
+                    for _ in 0..args.k {
+                        rev_kmer = (rev_kmer << 2) | ((tmp & 3) ^ 3);
+                        tmp >>= 2;
+                    }
+                    let rev_rank = *order_lut.get(rev_kmer).unwrap_or(&u32::MAX);
+
+                    // Canonical Rank is the minimum of both strands at this position
+                    ranks.push(fwd_rank.min(rev_rank));
                 }
             }
 
-            // Output length will perfectly equal the total number of k-mers
+            // --- Sliding Window Logic ---
             let mut transformed_sequence = String::with_capacity(ranks.len());
-
-            //Use the queue format that many other minimizer algorithms have used
             let mut window = VecDeque::with_capacity(window_kmers);
-
             let n = ranks.len();
             let mut r = 0;
 
-            // Forward-Looking Sliding Window
             for l in 0..n {
-                // 1. Expand the right edge of the window up to the target window size, bounded by sequence length
                 while r < n && r < l + window_kmers {
-                    // Maintain monotonic property (keep leftmost/earliest k-mer on ties)
                     while let Some(&idx) = window.back() {
-                        if ranks[idx] > ranks[r] {
-                            window.pop_back();
-                        } else {
-                            break;
-                        }
+                        if ranks[idx] > ranks[r] { window.pop_back(); } 
+                        else { break; }
                     }
                     window.push_back(r);
                     r += 1;
                 }
-
-                // Evict kmers that have fallen out of the left edge of the window
                 while let Some(&idx) = window.front() {
-                    if idx < l {
-                        window.pop_front();
-                    } else {
-                        break;
-                    }
+                    if idx < l { window.pop_front(); } 
+                    else { break; }
                 }
 
-                // Output the minimizer for the current window (even if the window truncated at the end)
                 let min_idx = *window.front().unwrap();
                 let rank = ranks[min_idx];
-
                 let c = rank_to_char_lut.get(rank as usize).copied().unwrap_or('?');
                 transformed_sequence.push(c);
             }
 
-            info!(
-                "Transformed '{}'. Length: {}",
-                String::from_utf8_lossy(seqrec.id()),
-                transformed_sequence.len()
-            );
-
-            writeln!(buf_writer, ">{}", String::from_utf8_lossy(seqrec.id()))
-                .expect("Failed to write FASTA header");
-            writeln!(buf_writer, "{}", transformed_sequence)
-                .expect("Failed to write sequence data");
+            writeln!(buf_writer, ">{}", String::from_utf8_lossy(seqrec.id())).unwrap();
+            for chunk in transformed_sequence.as_bytes().chunks(60) {
+                buf_writer.write_all(chunk).expect("Failed to write sequence chunk");
+                buf_writer.write_all(b"\n").expect("Failed to write newline");
+            }
         }
     }
-
-    buf_writer.flush().expect("Failed to flush output buffer");
-    if args.verbose {
-        info!("All sequences processed and written to {}", args.output);
-    }
+    buf_writer.flush().ok();
 }
