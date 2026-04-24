@@ -22,7 +22,7 @@ fn main() {
     match args.mode {
         Mode::DefineMapping(define_mapping_args) => mapping::define_mapping(define_mapping_args),
         Mode::Optimize(optimize_args) => optimize::optimize(optimize_args),
-        Mode::MFT(mft_args) => mft::mft(mft_args),
+        Mode::Transform(mft_args) => mft::mft(mft_args),
     }
 
     let end = Instant::now();

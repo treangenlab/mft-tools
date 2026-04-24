@@ -23,7 +23,7 @@ pub struct Cli {
 pub enum Mode {
     DefineMapping(DefineMappingArgs), //Define a mapping table given kmer size and alphabet size and/or reduced
     Optimize(OptimizeOrderArgs), // Optimize an ordering given a mapping table and desired transition nucleotides balance
-    MFT(MinFrameTransitionArgs), //Call --> takes the genomes and sequencing data and does the viral variation analysis
+    Transform(MinFrameTransitionArgs), //Call --> takes the genomes and sequencing data and does the viral variation analysis
 }
 
 #[derive(Args, Default)]
