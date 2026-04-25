@@ -4,8 +4,6 @@ use log::*;
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use rand::seq::SliceRandom;
-use std::fs::File;
-use std::io::{BufWriter, Write};
 use std::path::Path;
 
 pub fn check_args(args: &DefineOrderArgs) {
@@ -59,15 +57,6 @@ pub fn define_order(args: DefineOrderArgs) {
         ordered
     };
 
-    let out_file = File::create(&args.output).unwrap_or_else(|_| {
-        error!("Failed to create output file: {}", args.output);
-        std::process::exit(1);
-    });
-    let mut writer = BufWriter::new(out_file);
-    for kmer in &kmers {
-        writeln!(writer, "{}", kmer).expect("Failed to write k-mer to output");
-    }
-    writer.flush().ok();
-
-    info!("Wrote {} k-mers to {}", kmers.len(), args.output);
+    info!("Writing {} k-mers to {}", kmers.len(), args.output);
+    save_order(&args.output, &kmers);
 }

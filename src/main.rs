@@ -4,11 +4,12 @@ use crate::consts::MFT_VERSION;
 
 pub mod cli;
 pub mod consts;
+pub mod evaluate;
 pub mod mapping;
 pub mod mft;
 pub mod optimize;
-pub mod utils;
 pub mod ordering;
+pub mod utils;
 
 use cli::*;
 
@@ -23,6 +24,7 @@ fn main() {
     match args.mode {
         Mode::DefineMapping(define_mapping_args) => mapping::define_mapping(define_mapping_args),
         Mode::DefineOrder(define_order_args) => ordering::define_order(define_order_args),
+        Mode::Evaluate(evaluate_args) => evaluate::evaluate(evaluate_args),
         Mode::Optimize(optimize_args) => optimize::optimize(optimize_args),
         Mode::Transform(mft_args) => mft::mft(mft_args),
     }
