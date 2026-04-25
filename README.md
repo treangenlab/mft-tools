@@ -29,14 +29,15 @@ cargo run --release -- --help
 
 ## Usage
 
-mft-tools exposes four subcommands. The typical workflow is:
+mft-tools exposes five subcommands. The typical workflow is:
 
 1. **`define-mapping`** — generate a k-mer → character mapping table
 2. **`define-order`** — generate a starting k-mer ordering (random or alphabetical)
 3. **`optimize`** — find an ordering of k-mers that maximises the masking rate
-4. **`transform`** — apply the transformation to one or more FASTA files
+4. **`evaluate`** — compute the theoretical SNP masking rate for a given mapping + ordering pair
+5. **`transform`** — apply the transformation to one or more FASTA files
 
-Steps 2 and 3 are optional: `transform` will generate a random ordering on the fly if none is provided, and `optimize` can also start from a random ordering.
+Steps 2 and 3 are optional: `transform` will generate a random ordering on the fly if none is provided, and `optimize` can also start from a random ordering. `evaluate` can be used after any step that produces an ordering to inspect its masking properties before committing to a full transformation.
 
 Pre-built mapping tables for common configurations are provided in the [`mapping_tables/`](mapping_tables/) directory.
 
@@ -172,6 +173,56 @@ CTC
 ```
 
 The file contains all `4^k` k-mers (64 lines for k=3).
+
+---
+
+### `evaluate`
+
+Computes the theoretical SNP masking rate for a given mapping table and k-mer ordering without running a full transformation. For each sampled window, every possible single-nucleotide mutation is tested and the fraction that leave the transformed character unchanged is reported — both globally and broken down by the 12 substitution types. The entropy of the transformed character distribution is also reported as a measure of alphabet utilisation.
+
+```
+mft-tools evaluate [OPTIONS] --mapping-table <FILE> --ordering <FILE>
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `-k, --kmer-size` | `3` | k-mer length (must match mapping table and ordering) |
+| `-w, --window-size` | `5` | Sliding window length (must be > k) |
+| `-m, --mapping-table` | *(required)* | Path to tab-delimited mapping file |
+| `-b, --ordering` | *(required)* | Path to k-mer ordering file |
+| `-n, --n-samples` | `10000` | Number of windows to sample for the masking rate calculation |
+| `-o, --output` | `evaluation.txt` | Output file path |
+| `--verbose` | off | Verbose logging |
+
+**Example** — evaluate an optimised ordering:
+
+```bash
+mft-tools evaluate -k 3 -w 5 \
+    -m mapping_tables/k3_XX-.txt \
+    -b optimized_order.txt \
+    -o evaluation.txt
+```
+
+**Output** — a tab-delimited file with one metric per line. The global rate and entropy are listed first, followed by the 12 substitution-type rates in alphabetical order:
+
+```
+global_masking_rate	0.456771
+entropy	3.661167
+A->C	0.355469
+A->G	0.379687
+A->T	0.322656
+C->A	0.355469
+C->G	0.482031
+C->T	0.589063
+G->A	0.379687
+G->C	0.482031
+G->T	0.611719
+T->A	0.322656
+T->C	0.589063
+T->G	0.611719
+```
+
+The global masking rate is the fraction of all tested SNPs that did not change the transformed character. Values closer to `1.0` indicate stronger mutation masking. The per-substitution rates highlight which transition types (e.g. transitions vs transversions) are masked more effectively by a given ordering.
 
 ---
 
