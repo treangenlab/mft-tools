@@ -22,8 +22,58 @@ pub struct Cli {
 #[derive(Subcommand)]
 pub enum Mode {
     DefineMapping(DefineMappingArgs), //Define a mapping table given kmer size and alphabet size and/or reduced
+    DefineOrder(DefineOrderArgs), // Define an ordering to be used for optimization or transformation
     Optimize(OptimizeOrderArgs), // Optimize an ordering given a mapping table and desired transition nucleotides balance
     Transform(MinFrameTransitionArgs), //Call --> takes the genomes and sequencing data and does the viral variation analysis
+}
+
+#[derive(Args, Default)]
+#[clap(
+    about = "Function to define a k-mer ordering to be used for MFT transformation or baseline for further optimization",
+    arg_required_else_help = true
+)]
+pub struct DefineOrderArgs {
+    // k-mer size
+    #[clap(
+        short = 'k',
+        long = "kmer-size",
+        help_heading = "MFT Algorithm Params",
+        default_value_t = 3,
+        help = "Length of the k-mer (must match mapping table)"
+    )]
+    pub k: usize,
+
+    // Random ordering seed
+    #[clap(
+        short = 's',
+        long = "seed",
+        help_heading = "Ordering Parameters",
+        help = "Seed for random ordering"
+    )]
+    pub seed: Option<u64>,
+
+    // Alphabetical ordering
+    #[clap(
+        short = 'a',
+        long = "alphabetical",
+        help_heading = "Ordering Parameters",
+        help = "Flag to use alphabetical ordering instead of random"
+    )]
+    pub alphabetical: bool,
+
+    // Output location
+    #[clap(
+        short = 'o',
+        long = "output",
+        help_heading = "Output",
+        default_value = "order.txt",
+        help = "Path where the resulting k-mer ordering will be stored"
+    )]
+    pub output: String,
+
+    //Verbose mode (prints most checkpoints)
+    #[clap(long = "verbose", help = "Verbose output (warning: very verbose)")]
+    pub verbose: bool,
 }
 
 #[derive(Args, Default)]
@@ -186,7 +236,7 @@ pub struct MinFrameTransitionArgs {
     #[clap(
         short = 'm',
         long = "mapping-table",
-        help_heading = "MFT Algorithm Params",
+        help_heading = "MFT Mapping Table",
         help = "Path to the tab-delimited k-mer mapping file"
     )]
     pub mapping_table: String,
@@ -195,10 +245,18 @@ pub struct MinFrameTransitionArgs {
     #[clap(
         short = 'b',
         long = "order",
-        help_heading = "MFT Algorithm Params",
-        help = "Path to file containing k-mer ordering"
+        help_heading = "MFT Ordering",
+        help = "Path to file containing pre-existing k-mer ordering. If not defined a random ordering will be used"
     )]
-    pub order: String,
+    pub order: Option<String>,
+
+    #[clap(
+        short = 's',
+        long = "seed",
+        help_heading = "MFT Ordering",
+        help = "Seed for random ordering (will not be used if -b is provided)"
+    )]
+    pub seed: Option<u64>,
 
     // Output location
     #[clap(

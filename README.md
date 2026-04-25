@@ -29,11 +29,14 @@ cargo run --release -- --help
 
 ## Usage
 
-mft-tools exposes three subcommands. The typical workflow is:
+mft-tools exposes four subcommands. The typical workflow is:
 
 1. **`define-mapping`** — generate a k-mer → character mapping table
-2. **`optimize`** — find an ordering of k-mers that maximises the masking rate
-3. **`transform`** — apply the transformation to one or more FASTA files
+2. **`define-order`** — generate a starting k-mer ordering (random or alphabetical)
+3. **`optimize`** — find an ordering of k-mers that maximises the masking rate
+4. **`transform`** — apply the transformation to one or more FASTA files
+
+Steps 2 and 3 are optional: `transform` will generate a random ordering on the fly if none is provided, and `optimize` can also start from a random ordering.
 
 Pre-built mapping tables for common configurations are provided in the [`mapping_tables/`](mapping_tables/) directory.
 
@@ -73,6 +76,52 @@ TTTTT   L
 ```
 
 The file will contain `4^k` lines (one per k-mer). The number of distinct characters equals the number of unique patterns defined by the seed (e.g. `4^weight` for a spaced seed of a given weight).
+
+---
+
+### `define-order`
+
+Generates a plain-text k-mer ordering file to use as input to `optimize` or `transform`. Two ordering strategies are available: random (default) and alphabetical. If neither `--seed` nor `--alphabetical` is given, a seed is drawn from OS entropy and printed to stderr so the run is reproducible.
+
+```
+mft-tools define-order [OPTIONS]
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `-k, --kmer-size` | `3` | k-mer length (3–15) |
+| `-s, --seed` | — | Seed for random ordering (mutually exclusive with `-a`) |
+| `-a, --alphabetical` | off | Use alphabetical (ACGT) ordering instead of random (mutually exclusive with `-s`) |
+| `-o, --output` | `order.txt` | Output ordering file |
+| `--verbose` | off | Verbose logging |
+
+**Example** — random ordering with a fixed seed:
+
+```bash
+mft-tools define-order -k 3 -s 42 -o order_seed42.txt
+```
+
+**Example** — random ordering with an auto-generated seed (seed is printed to stderr):
+
+```bash
+mft-tools define-order -k 3 -o order_random.txt
+# [INFO] No seed provided. Using randomly generated seed: 13278540921643
+```
+
+**Example** — alphabetical ordering:
+
+```bash
+mft-tools define-order -k 3 -a -o order_alpha.txt
+```
+
+**Output** — a plain-text file with one k-mer per line, listed in priority order (rank 0 first). The file contains all `4^k` k-mers (64 lines for k=3):
+
+```
+CTG
+TTG
+CTC
+...
+```
 
 ---
 
@@ -131,7 +180,7 @@ The file contains all `4^k` k-mers (64 lines for k=3).
 Applies the Min-Frame Transformation to one or more FASTA files. Each sequence is transformed to a same-length string over the reduced alphabet and written to a new FASTA file.
 
 ```
-mft-tools transform [OPTIONS] --genomes <FILE>... --mapping-table <FILE> --order <FILE>
+mft-tools transform [OPTIONS] --genomes <FILE>... --mapping-table <FILE>
 ```
 
 | Flag | Default | Description |
@@ -140,7 +189,8 @@ mft-tools transform [OPTIONS] --genomes <FILE>... --mapping-table <FILE> --order
 | `-k, --kmer-size` | `3` | k-mer length (must match mapping table and order file) |
 | `-w, --window-size` | `5` | Sliding window length (must be > k) |
 | `-m, --mapping-table` | *(required)* | Path to tab-delimited mapping file |
-| `-b, --order` | *(required)* | Path to k-mer ordering file |
+| `-b, --order` | random | Path to k-mer ordering file; if omitted a random ordering is generated |
+| `-s, --seed` | — | Seed for the random ordering (used only when `-b` is omitted; printed to stderr if not set) |
 | `-o, --output` | `mft.fa` | Output FASTA file path |
 | `--verbose` | off | Verbose logging |
 

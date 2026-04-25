@@ -8,6 +8,7 @@ pub mod mapping;
 pub mod mft;
 pub mod optimize;
 pub mod utils;
+pub mod ordering;
 
 use cli::*;
 
@@ -21,6 +22,7 @@ fn main() {
     let args = cli::parse_args();
     match args.mode {
         Mode::DefineMapping(define_mapping_args) => mapping::define_mapping(define_mapping_args),
+        Mode::DefineOrder(define_order_args) => ordering::define_order(define_order_args),
         Mode::Optimize(optimize_args) => optimize::optimize(optimize_args),
         Mode::Transform(mft_args) => mft::mft(mft_args),
     }
