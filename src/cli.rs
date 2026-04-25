@@ -23,8 +23,78 @@ pub struct Cli {
 pub enum Mode {
     DefineMapping(DefineMappingArgs), //Define a mapping table given kmer size and alphabet size and/or reduced
     DefineOrder(DefineOrderArgs), // Define an ordering to be used for optimization or transformation
+    Evaluate(EvaluateArgs), // Evaluate the theoretical SNP masking rate of an ordering/mapping table pairing
     Optimize(OptimizeOrderArgs), // Optimize an ordering given a mapping table and desired transition nucleotides balance
     Transform(MinFrameTransitionArgs), //Call --> takes the genomes and sequencing data and does the viral variation analysis
+}
+
+#[derive(Args, Default)]
+#[clap(
+    about = "Function to evaluate the theoretical SNP masking rate of an ordering/mapping table pairing",
+    arg_required_else_help = true
+)]
+pub struct EvaluateArgs {
+    // K-mer size
+    #[clap(
+        short = 'k',
+        long = "kmer-size",
+        help_heading = "MFT Algorithm Params",
+        default_value_t = 3,
+        help = "Length of the k-mer (must match mapping table)"
+    )]
+    pub k: usize,
+
+    // window size 
+    #[clap(
+        short = 'w',
+        long = "window-size",
+        help_heading = "MFT Algorithm Params",
+        default_value_t = 5,
+        help = "Length of the sequence window (w >= k)"
+    )]
+    pub w: usize,   
+
+    // Mapping Table path
+    #[clap(
+        short = 'm',
+        long = "mapping-table",
+        help_heading = "MFT Mapping Table",
+        help = "Path to the tab-delimited k-mer mapping file"
+    )]
+    pub mapping_table: String,
+
+    // Ordering path
+    #[clap(
+        short = 'b',
+        long = "ordering",
+        help_heading = "MFT Ordering",
+        help = "Path to the k-mer ordering file"
+    )]
+    pub ordering: String,
+
+    // Number of samples for masking rate estimation
+    #[clap(
+        short = 'n',
+        long = "n-samples",
+        help_heading = "Evaluation Parameters",
+        default_value_t = 10000,
+        help = "Number of windows to sample for masking rate calculation"
+    )]
+    pub n_samples: usize,
+
+    // Output path containing resulting information
+    #[clap(
+        short = 'o',
+        long = "output",
+        help_heading = "Output",
+        default_value = "evaluation.txt",
+        help = "Path to save the resulting evaluation information"
+    )]
+    pub output: String,
+
+    //Verbose mode (prints most checkpoints)
+    #[clap(long = "verbose", help = "Verbose output (warning: very verbose)")]
+    pub verbose: bool,
 }
 
 #[derive(Args, Default)]
