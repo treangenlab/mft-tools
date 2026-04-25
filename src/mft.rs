@@ -2,6 +2,9 @@ use crate::cli::*;
 use crate::utils::*;
 use log::*;
 use needletail::parse_fastx_file;
+use rand::seq::SliceRandom;
+use rand::rngs::StdRng;
+use rand::{Rng, SeedableRng};
 use rustc_hash::FxHashMap;
 use std::collections::VecDeque;
 use std::fs::File;
@@ -37,9 +40,11 @@ pub fn check_args(args: &MinFrameTransitionArgs) {
         std::process::exit(1);
     }
 
-    if !Path::new(&args.order).exists() {
-        error!("Order file provided does not exist: {}", args.order);
-        std::process::exit(1);
+    if let Some(ref order_path) = args.order {
+        if !Path::new(order_path).exists() {
+            error!("Order file provided does not exist: {}", order_path);
+            std::process::exit(1);
+        }
     }
 
     for fasta_file in &args.genomes {
@@ -113,16 +118,46 @@ pub fn prepare_luts(
     (order_lut, rank_to_char_lut)
 }
 
+fn generate_all_kmers(k: usize) -> Vec<String> {
+    let bases = [b'A', b'C', b'G', b'T'];
+    let n = 1 << (2 * k);
+    (0..n)
+        .map(|i| {
+            let mut kmer = vec![0u8; k];
+            for j in 0..k {
+                kmer[k - 1 - j] = bases[(i >> (2 * j)) & 3];
+            }
+            String::from_utf8(kmer).unwrap()
+        })
+        .collect()
+}
+
 pub fn mft(args: MinFrameTransitionArgs) {
     check_args(&args);
 
     let raw_mapping = load_mapping(&args.mapping_table);
-    let order_lines = std::fs::read_to_string(&args.order)
-        .expect("Failed to read order file")
-        .lines()
-        .map(String::from)
-        .collect::<Vec<String>>();
-    let raw_order_map = get_order_map(&order_lines);
+
+    let raw_order_map = if let Some(ref order_path) = args.order {
+        let order_lines = std::fs::read_to_string(order_path)
+            .expect("Failed to read order file")
+            .lines()
+            .map(String::from)
+            .collect::<Vec<String>>();
+        get_order_map(&order_lines)
+    } else {
+        let seed = match args.seed {
+            Some(s) => s,
+            None => {
+                let s: u64 = rand::random();
+                info!("No seed provided. Using randomly generated seed: {}", s);
+                s
+            }
+        };
+        let mut rng = StdRng::seed_from_u64(seed);
+        let mut kmers = generate_all_kmers(args.k);
+        kmers.shuffle(&mut rng);
+        get_order_map(&kmers)
+    };
 
     let (order_lut, rank_to_char_lut) = prepare_luts(&raw_order_map, &raw_mapping, args.k);
 

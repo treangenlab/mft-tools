@@ -186,7 +186,7 @@ pub struct MinFrameTransitionArgs {
     #[clap(
         short = 'm',
         long = "mapping-table",
-        help_heading = "MFT Algorithm Params",
+        help_heading = "MFT Mapping Table",
         help = "Path to the tab-delimited k-mer mapping file"
     )]
     pub mapping_table: String,
@@ -195,10 +195,18 @@ pub struct MinFrameTransitionArgs {
     #[clap(
         short = 'b',
         long = "order",
-        help_heading = "MFT Algorithm Params",
-        help = "Path to file containing k-mer ordering"
+        help_heading = "MFT Ordering",
+        help = "Path to file containing pre-existing k-mer ordering. If not defined a random ordering will be used"
     )]
-    pub order: String,
+    pub order: Option<String>,
+
+    #[clap(
+        short = 's',
+        long = "seed",
+        help_heading = "MFT Ordering",
+        help = "Seed for random ordering (will not be used if -b is provided)"
+    )]
+    pub seed: Option<u64>,
 
     // Output location
     #[clap(
