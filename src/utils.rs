@@ -41,6 +41,20 @@ pub fn get_order_map(order: &[String]) -> FxHashMap<String, usize> {
         .collect()
 }
 
+pub fn generate_all_kmers(k: usize) -> Vec<String> {
+    let bases = [b'A', b'C', b'G', b'T'];
+    let n = 1 << (2 * k);
+    (0..n)
+        .map(|i| {
+            let mut kmer = vec![0u8; k];
+            for j in 0..k {
+                kmer[k - 1 - j] = bases[(i >> (2 * j)) & 3];
+            }
+            String::from_utf8(kmer).unwrap()
+        })
+        .collect()
+}
+
 pub fn check_fasta(file: &str) -> bool {
     if file.ends_with(".fa")
         || file.ends_with(".fasta")
