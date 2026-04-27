@@ -220,6 +220,15 @@ pub struct OptimizeOrderArgs {
     )]
     pub output: String,
 
+    // Optional: Transition weights file
+    #[clap(
+        short = 't',
+        long = "transition-weights",
+        help_heading = "Optimization Parameters",
+        help = "Path to transition weights file (tab-delimited: transition<tab>weight, e.g. 'A->C\\t0.1'). Weights must sum to 1.0. When provided, optimization maximizes a weighted sum of per-transition masking rates, which scales identically to the global masking rate."
+    )]
+    pub transition_weights: Option<String>,
+
     //Verbose mode (prints most checkpoints)
     #[clap(long = "verbose", help = "Verbose output (warning: very verbose)")]
     pub verbose: bool,
