@@ -1,13 +1,13 @@
 [package]
 name = "mft"
-version = "0.0.1"
+version = "0.1.0"
 edition = "2024"
 authors = [
     "Ryan Doughty <rdd4@rice.edu>",
     "Todd Treangen <treangen@rice.edu>",
 ]
 license = "MIT"
-description = "Min-Frame Transformation for sequence analysis"
+description = "The Min-Frame Transformation (MFT) for more sensitive sequence seeding"
 readme = "README.md"
 keywords = ["genome alignment", "seeding", "MUMs", "kmers"]
 categories = ["command-line-utilities", "science"]
