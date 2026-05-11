@@ -12,7 +12,18 @@ The MFT is similar to the use of minimizers in many ways, however there are some
 
 ## Installation
 
-mft-tools is currently distributed as source only. You will need [Rust](https://www.rust-lang.org/tools/install) (edition 2024, stable toolchain) installed.
+The simplest and recommended way to install mft-tools is through conda/mamba:
+```
+mamba install -n mft-tools mft-tools
+mamba activate mft-tools
+```
+
+You can comfirm if the installation was successful by then running:
+```
+mft --help
+```
+
+If you would like to run from source, follow the commands below. You will need [Rust](https://www.rust-lang.org/tools/install) (edition 2024, stable toolchain) installed.
 
 ```bash
 # 1. Clone the repository
@@ -48,7 +59,7 @@ Pre-built mapping tables for common configurations are provided in the [`mapping
 Generates a tab-delimited mapping table that assigns every k-mer to a character in a reduced alphabet. The reduced alphabet is derived from a spaced-seed pattern: positions marked `1` or `X` in the seed are the "match" positions, so k-mers that agree at those positions map to the same character.
 
 ```
-mft-tools define-mapping [OPTIONS] --kmer-size <K> --output <FILE>
+mft define-mapping [OPTIONS] --kmer-size <K> --output <FILE>
                              (--alphabet-size <N> | --spaced-seed <SEED>)
 ```
 
@@ -63,7 +74,7 @@ mft-tools define-mapping [OPTIONS] --kmer-size <K> --output <FILE>
 **Example** — build a mapping table for k=5 with seed `11011` (ignore the middle position):
 
 ```bash
-mft-tools define-mapping -k 5 -s 11011 -o mapping_tables/k5_11011.txt
+mft define-mapping -k 5 -s 11011 -o mapping_tables/k5_11011.txt
 ```
 
 **Output** — a tab-delimited file with one k-mer per line followed by its mapped character:
@@ -85,7 +96,7 @@ The file will contain `4^k` lines (one per k-mer). The number of distinct charac
 Generates a plain-text k-mer ordering file to use as input to `optimize` or `transform`. Two ordering strategies are available: random (default) and alphabetical. If neither `--seed` nor `--alphabetical` is given, a seed is drawn from OS entropy and printed to stderr so the run is reproducible.
 
 ```
-mft-tools define-order [OPTIONS]
+mft define-order [OPTIONS]
 ```
 
 | Flag | Default | Description |
@@ -99,20 +110,20 @@ mft-tools define-order [OPTIONS]
 **Example** — random ordering with a fixed seed:
 
 ```bash
-mft-tools define-order -k 3 -s 42 -o order_seed42.txt
+mft define-order -k 3 -s 42 -o order_seed42.txt
 ```
 
 **Example** — random ordering with an auto-generated seed (seed is printed to stderr):
 
 ```bash
-mft-tools define-order -k 3 -o order_random.txt
+mft define-order -k 3 -o order_random.txt
 # [INFO] No seed provided. Using randomly generated seed: 13278540921643
 ```
 
 **Example** — alphabetical ordering:
 
 ```bash
-mft-tools define-order -k 3 -a -o order_alpha.txt
+mft define-order -k 3 -a -o order_alpha.txt
 ```
 
 **Output** — a plain-text file with one k-mer per line, listed in priority order (rank 0 first). The file contains all `4^k` k-mers (64 lines for k=3):
@@ -131,7 +142,7 @@ CTC
 Runs a hill-climbing search over k-mer orderings to maximise the MFT masking rate — the fraction of single-nucleotide mutations that do not change the transformed character at that position. The result is an ordering file used as input to the `mft` subcommand.
 
 ```
-mft-tools optimize [OPTIONS] --mapping-table <FILE>
+mft optimize [OPTIONS] --mapping-table <FILE>
 ```
 
 | Flag | Default | Description |
@@ -181,7 +192,7 @@ The file contains all `4^k` k-mers (64 lines for k=3).
 Computes the theoretical SNP masking rate for a given mapping table and k-mer ordering without running a full transformation. For each sampled window, every possible single-nucleotide mutation is tested and the fraction that leave the transformed character unchanged is reported — both globally and broken down by the 12 substitution types. The entropy of the transformed character distribution is also reported as a measure of alphabet utilisation.
 
 ```
-mft-tools evaluate [OPTIONS] --mapping-table <FILE> --ordering <FILE>
+mft evaluate [OPTIONS] --mapping-table <FILE> --ordering <FILE>
 ```
 
 | Flag | Default | Description |
@@ -197,7 +208,7 @@ mft-tools evaluate [OPTIONS] --mapping-table <FILE> --ordering <FILE>
 **Example** — evaluate an optimised ordering:
 
 ```bash
-mft-tools evaluate -k 3 -w 5 \
+mft evaluate -k 3 -w 5 \
     -m mapping_tables/k3_XX-.txt \
     -b optimized_order.txt \
     -o evaluation.txt
@@ -231,7 +242,7 @@ The global masking rate is the fraction of all tested SNPs that did not change t
 Applies the Min-Frame Transformation to one or more FASTA files. Each sequence is transformed to a same-length string over the reduced alphabet and written to a new FASTA file.
 
 ```
-mft-tools transform [OPTIONS] --genomes <FILE>... --mapping-table <FILE>
+mft transform [OPTIONS] --genomes <FILE>... --mapping-table <FILE>
 ```
 
 | Flag | Default | Description |
@@ -248,7 +259,7 @@ mft-tools transform [OPTIONS] --genomes <FILE>... --mapping-table <FILE>
 **Example** — transform a genome FASTA file:
 
 ```bash
-mft-tools transform -g genome.fna -k 3 -w 5 \
+mft transform -g genome.fna -k 3 -w 5 \
         -m mapping_tables/k3_XX-.txt \
         -b optimized_order.txt \
         -o genome_mft.fa
@@ -257,7 +268,7 @@ mft-tools transform -g genome.fna -k 3 -w 5 \
 Multiple input files can be provided; all sequences are written to the single output file:
 
 ```bash
-mft-tools transform -g ref.fa query.fa -k 3 -w 5 \
+mft transform -g ref.fa query.fa -k 3 -w 5 \
         -m mapping_tables/k3_XX-.txt \
         -b optimized_order.txt \
         -o combined_mft.fa
