@@ -144,6 +144,8 @@ pub fn check_args(args: &OptimizeOrderArgs) {
 
 pub fn optimize(args: OptimizeOrderArgs) {
     check_args(&args);
+    let mut args = args;
+    args.output = ensure_extension(&args.output, "txt");
 
     let weights = args.transition_weights.as_deref().map(load_transition_weights);
 

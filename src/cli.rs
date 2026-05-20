@@ -263,6 +263,7 @@ pub struct DefineMappingArgs {
         short = 'o',
         long = "output",
         help_heading = "Output",
+        default_value = "mapping.txt",
         help = "Path where the resulting mapping table will be stored"
     )]
     pub output: String,

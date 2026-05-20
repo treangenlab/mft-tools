@@ -50,6 +50,8 @@ fn check_args(args: &EvaluateArgs) {
 
 pub fn evaluate(args: EvaluateArgs) {
     check_args(&args);
+    let mut args = args;
+    args.output = ensure_extension(&args.output, "txt");
 
     info!(
         "Evaluating masking rate: k={}, w={}, samples={}",

@@ -120,6 +120,8 @@ pub fn prepare_luts(
 
 pub fn mft(args: MinFrameTransitionArgs) {
     check_args(&args);
+    let mut args = args;
+    args.output = ensure_extension(&args.output, "fasta");
 
     let raw_mapping = load_mapping(&args.mapping_table);
 

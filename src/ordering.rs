@@ -38,6 +38,8 @@ pub fn check_args(args: &DefineOrderArgs) {
 
 pub fn define_order(args: DefineOrderArgs) {
     check_args(&args);
+    let mut args = args;
+    args.output = ensure_extension(&args.output, "txt");
 
     let kmers = if args.alphabetical {
         info!("Using alphabetical k-mer ordering");

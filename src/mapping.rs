@@ -1,5 +1,6 @@
 use crate::cli::*;
 use crate::consts::*;
+use crate::utils::ensure_extension;
 
 use itertools::Itertools;
 use log::*;
@@ -63,6 +64,8 @@ pub fn check_args(args: &DefineMappingArgs) {
 
 pub fn define_mapping(args: DefineMappingArgs) {
     check_args(&args);
+    let mut args = args;
+    args.output = ensure_extension(&args.output, "txt");
 
     info!("Creating mapping for k={}", args.k);
 
