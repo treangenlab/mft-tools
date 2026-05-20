@@ -21,7 +21,7 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Mode {
-    DefineMapping(DefineMappingArgs), //Define a mapping table given kmer size and alphabet size and/or reduced
+    DefineMapping(DefineMappingArgs), //Define a mapping table given kmer size and spaced seed
     DefineOrder(DefineOrderArgs), // Define an ordering to be used for optimization or transformation
     Evaluate(EvaluateArgs), // Evaluate the theoretical SNP masking rate of an ordering/mapping table pairing
     Optimize(OptimizeOrderArgs), // Optimize an ordering given a mapping table and desired transition nucleotides balance
@@ -248,15 +248,6 @@ pub struct DefineMappingArgs {
         help = "Length of the k-mer to be mapped"
     )]
     pub k: usize,
-
-    // Reduced alphabet size
-    #[clap(
-        short = 'a',
-        long = "alphabet-size",
-        help_heading = "MFT Algorithm Params",
-        help = "Size of the reduced alphabet (e.g., 20 for same size as amino acids)"
-    )]
-    pub alphabet_size: Option<usize>,
 
     // Spaced seed string
     #[clap(
