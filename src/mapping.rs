@@ -1,5 +1,6 @@
 use crate::cli::*;
 use crate::consts::*;
+use crate::utils::ensure_extension;
 
 use itertools::Itertools;
 use log::*;
@@ -27,22 +28,9 @@ pub fn check_args(args: &DefineMappingArgs) {
         std::process::exit(1);
     }
 
-    // Mutual Exclusion -- alphabet size and Spaced Seed
-    if args.alphabet_size.is_some() && args.spaced_seed.is_some() {
-        error!("Provide either --alphabet-size or --spaced-seed, not both.");
+    if args.spaced_seed.is_none() {
+        error!("You must provide --spaced-seed.");
         std::process::exit(1);
-    }
-    if args.alphabet_size.is_none() && args.spaced_seed.is_none() {
-        error!("You must provide either --alphabet-size or --spaced-seed.");
-        std::process::exit(1);
-    }
-
-    // Alphabet size check: 4-64 (could update later)
-    if let Some(size) = args.alphabet_size {
-        if size < 4 || size > MAP_ALPHABET.len() {
-            error!("Alphabet size {} is out of bounds. Must be 4-{}.", size, MAP_ALPHABET.len());
-            std::process::exit(1);
-        }
     }
 
     // Spaced seed checks: length == k and weight (number of 1s/Xs) between 3-5
@@ -76,6 +64,8 @@ pub fn check_args(args: &DefineMappingArgs) {
 
 pub fn define_mapping(args: DefineMappingArgs) {
     check_args(&args);
+    let mut args = args;
+    args.output = ensure_extension(&args.output, "txt");
 
     info!("Creating mapping for k={}", args.k);
 
@@ -84,11 +74,7 @@ pub fn define_mapping(args: DefineMappingArgs) {
 
     if let Some(ref seed) = args.spaced_seed {
         generate_spaced_mapping(&args, seed, &mut writer);
-    } else {
-        // Placeholder for fixed alphabet size logic which is stil tbd
-        println!("Alphabet size logic not yet implemented.");
     }
-    return;
 }
 
 fn generate_spaced_mapping(args: &DefineMappingArgs, seed: &str, writer: &mut BufWriter<File>) {

@@ -3,6 +3,20 @@ use log::*;
 use rand::RngExt;
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::fs::File;
+
+pub fn ensure_extension(path: &str, ext: &str) -> String {
+    let suffix = format!(".{}", ext);
+    if path.ends_with(&suffix) {
+        return path.to_string();
+    }
+    if let Some(dot) = path.rfind('.') {
+        if dot > path.rfind('/').unwrap_or(0) {
+            error!("Output file must end with .{} (got: {})", ext, path);
+            std::process::exit(1);
+        }
+    }
+    format!("{}{}", path, suffix)
+}
 use std::io::{BufRead, BufReader, BufWriter, Write};
 
 pub fn load_mapping(path: &str) -> FxHashMap<String, char> {
